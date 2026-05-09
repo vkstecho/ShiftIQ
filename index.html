@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1628">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="google" content="notranslate">
+<meta name="robots" content="noindex">
+<title>ShiftIQ — Smart Shift Management</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="512x512" href="icon512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon512.png">
+
+<!-- Firebase SDK (modular v9 via compat for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --bg:#0a1628; --bg2:#0f1c30; --card:#15243d; --card2:#1c2e4a;
+  --border:rgba(255,255,255,.06); --border2:rgba(255,255,255,.10);
+  --text:#f1f5f9; --muted:#94a3b8; --muted2:#64748b;
+  --primary:#3b82f6; --primary2:#2563eb;
+  --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+  --hdr-h:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
+  background:var(--bg);color:var(--text);overflow-x:hidden;}
+body{padding-bottom:env(safe-area-inset-bottom);}
+
+/* === HEADER === */
+.hdr{position:sticky;top:0;z-index:100;background:var(--bg2);
+  border-bottom:1px solid var(--border);padding:12px 16px;
+  display:flex;align-items:center;gap:12px;height:var(--hdr-h);}
+.brand{font-size:20px;font-weight:800;letter-spacing:-.5px;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;}
+.brand .dot{color:var(--primary);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border2);color:var(--text);
+  padding:8px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;
+  display:flex;align-items:center;gap:6px;}
+.hdr-btn:hover{background:var(--card2);}
+
+/* === LOGIN SCREEN === */
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:20px;background:radial-gradient(ellipse at top,rgba(59,130,246,.08),transparent 60%);}
+.auth-card{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:24px;padding:32px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.auth-logo{font-size:48px;font-weight:900;letter-spacing:-2px;text-align:center;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;}
+.auth-tagline{text-align:center;color:var(--muted);font-size:13px;margin-bottom:28px;}
+.auth-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:6px;}
+.auth-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:24px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);
+  margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select{width:100%;padding:14px 14px;border-radius:12px;
+  border:1.5px solid var(--border2);background:var(--card);color:var(--text);
+  font-size:15px;font-family:inherit;outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus{border-color:var(--primary);}
+
+.btn-primary{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+  font-size:15px;font-weight:800;font-family:inherit;
+  box-shadow:0 4px 20px rgba(59,130,246,.3);transition:transform .1s;}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{width:100%;padding:13px;border-radius:12px;border:1px solid var(--border2);
+  background:var(--card);color:var(--text);font-size:14px;font-weight:700;
+  font-family:inherit;cursor:pointer;margin-top:10px;}
+.btn-secondary:hover{background:var(--card2);}
+
+.phone-row{display:flex;gap:8px;}
+.phone-row .ccode{flex:0 0 80px;text-align:center;}
+.phone-row input{flex:1;}
+
+.otp-input{font-size:24px;letter-spacing:8px;text-align:center;font-weight:800;}
+
+.hint{font-size:11px;color:var(--muted2);text-align:center;margin-top:14px;line-height:1.5;}
+
+/* === MAIN APP === */
+.main{padding:16px;max-width:1200px;margin:0 auto;}
+
+.page-title{font-size:24px;font-weight:800;margin-bottom:4px;letter-spacing:-.5px;}
+.page-sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
+.card-row{display:flex;align-items:center;gap:12px;}
+.card-name{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.card-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted);}
+.empty-ico{font-size:48px;margin-bottom:8px;opacity:.6;}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.5px;}
+.badge.pending{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3);}
+.badge.active{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.badge.suspended{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.badge.trial{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.3);}
+
+.act-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.act-btn{flex:1;min-width:90px;padding:9px 10px;border-radius:9px;border:1px solid var(--border2);
+  background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;
+  font-family:inherit;}
+.act-btn.green{border-color:rgba(34,197,94,.4);color:var(--green);background:rgba(34,197,94,.08);}
+.act-btn.red{border-color:rgba(239,68,68,.4);color:var(--red);background:rgba(239,68,68,.08);}
+.act-btn.amber{border-color:rgba(245,158,11,.4);color:var(--amber);background:rgba(245,158,11,.08);}
+
+/* Stats grid */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.stat-val{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;margin-top:4px;}
+
+/* === TOAST === */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:var(--card2);color:#fff;padding:12px 22px;border-radius:12px;
+  font-size:13px;font-weight:700;z-index:9999;border:1px solid var(--border2);
+  opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
+  max-width:90vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-8px);}
+
+/* === LOADING === */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+#loadingScreen{position:fixed;inset:0;background:var(--bg);z-index:99999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* === MODAL === */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;
+  display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:480px;
+  padding:24px 20px 36px;border-top:1px solid var(--border2);
+  max-height:90vh;overflow-y:auto;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;
+  margin:0 auto 16px;}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:6px;text-align:center;}
+.modal-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px;}
+
+/* Hide reCAPTCHA badge container by default */
+#recaptchaContainer{position:fixed;bottom:0;right:0;}
+
+/* Hide elements based on role */
+.role-hidden{display:none !important;}
+
+@media (min-width: 768px){
+  .auth-card{padding:40px 36px;}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <img src="icon512.png" alt="ShiftIQ"
+    style="width:96px;height:96px;border-radius:22px;object-fit:cover;
+           background:var(--card);border:1px solid var(--border2);"
+    onerror="this.style.display='none';document.getElementById('loadingTextFallback').style.display='block';">
+  <div id="loadingTextFallback" style="display:none" class="auth-logo">Shift<span style="color:var(--primary)">IQ</span></div>
+  <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-top:14px">
+    Shift<span style="color:var(--primary)">IQ</span>
+  </div>
+  <div class="spinner" style="margin-top:20px;width:32px;height:32px;border-width:3px;border-top-color:var(--primary)"></div>
+  <div style="margin-top:14px;color:var(--muted);font-size:13px">Loading...</div>
+</div>
+
+<!-- Auth Screens -->
+<div id="authView" style="display:none">
+
+  <!-- Step 1: Phone Number Entry -->
+  <div id="phoneScreen" class="auth-screen">
+    <div class="auth-card">
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <img src="icon512.png" alt="ShiftIQ"
+          style="width:80px;height:80px;border-radius:20px;object-fit:cover;
+                 background:var(--card);border:1px solid var(--border2);
+                 box-shadow:0 8px 24px rgba(59,130,246,.25);"
+          onerror="this.style.background='linear-gradient(135deg,var(--primary),#8b5cf6)';this.style.display='block';this.removeAttribute('src');">
+      </div>
+      <div class="auth-logo">Shift<span style="color:var(--primary)">IQ</span></div>
+      <div class="auth-tagline">Smart Shifts. Smarter Teams.</div>
+
+      <div class="auth-title">Welcome 👋</div>
+      <div class="auth-sub">Enter your mobile number to continue</div>
+
+      <div class="field">
+        <label>Mobile Number</label>
+        <div class="phone-row">
+          <input type="text" class="ccode" value="+91" readonly>
+          <input type="tel" id="phoneInput" placeholder="10-digit mobile" maxlength="10" inputmode="numeric">
+        </div>
+      </div>
+
+      <button class="btn-primary" id="sendOtpBtn" onclick="sendOtp()">
+        Send OTP
+      </button>
+
+      <div class="hint">
+        By continuing you agree to our Terms of Service<br>
+        We'll send a one-time password to verify your number
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: OTP Verification -->
+  <div id="otpScreen" class="auth-screen" style="display:none">
+    <div class="auth-card">
+      <div class="auth-title">Verify OTP</div>
+      <div class="auth-sub">Code sent to <b id="otpPhoneLbl">+91 ...</b></div>
+
+      <div class="field">
+        <label>6-Digit OTP</label>
+        <input type="text" id="otpInput" class="otp-input" placeholder="------" maxlength="6" inputmode="numeric">
+      </div>
+
+      <button class="btn-primary" id="verifyOtpBtn" onclick="verifyOtp()">
+        Verify & Continue
+      </button>
+
+      <button class="btn-secondary" onclick="backToPhone()">
+        ← Change Number
+      </button>
+
+      <div class="hint" id="otpHint">
+        Didn't receive? <a href="#" onclick="event.preventDefault();sendOtp()" style="color:var(--primary)">Resend</a>
+        &nbsp;·&nbsp; <span id="otpTimer"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3a: Manager Registration (first-time users) -->
+  <div id="registerScreen" class="auth-screen" style="display:none">
+    <div class="auth-card">
+      <div class="auth-title">Register Your Company</div>
+      <div class="auth-sub">Tell us about yourself and your business</div>
+
+      <div class="field">
+        <label>Your Full Name</label>
+        <input type="text" id="regName" placeholder="e.g. Vivek Kumar Shukla">
+      </div>
+
+      <div class="field">
+        <label>Company Name</label>
+        <input type="text" id="regCompanyName" placeholder="e.g. ABC Manufacturing Pvt. Ltd.">
+      </div>
+
+      <div class="field">
+        <label>Type of Company</label>
+        <select id="regCompanyType">
+          <option value="">Select type...</option>
+          <option value="manufacturing">Manufacturing</option>
+          <option value="metal">Metal / Steel</option>
+          <option value="plastic">Plastic / Polymer</option>
+          <option value="textile">Textile / Garments</option>
+          <option value="food">Food Processing</option>
+          <option value="pharma">Pharmaceutical</option>
+          <option value="chemical">Chemical</option>
+          <option value="auto">Automotive</option>
+          <option value="electronics">Electronics</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Your Employee Code</label>
+        <input type="text" id="regEmpCode" placeholder="e.g. EMP001">
+      </div>
+
+      <div class="field">
+        <label>Your Designation</label>
+        <input type="text" id="regDesignation" placeholder="e.g. Plant Manager / Production Head">
+      </div>
+
+      <button class="btn-primary" onclick="submitRegistration()">
+        Submit Registration Request
+      </button>
+
+      <div class="hint">
+        Your request will be reviewed by our team.<br>
+        You'll get notified once approved (usually within 24 hours).
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3b: Approval Pending -->
+  <div id="pendingScreen" class="auth-screen" style="display:none">
+    <div class="auth-card" style="text-align:center">
+      <div style="font-size:64px;margin-bottom:12px">⏳</div>
+      <div class="auth-title">Approval Pending</div>
+      <div class="auth-sub" style="margin-bottom:20px">
+        Your registration is under review.<br>
+        We'll notify you once approved.
+      </div>
+      <div class="card" style="text-align:left;background:var(--card)">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Registered as</div>
+        <div style="font-weight:700" id="pendingName">—</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px" id="pendingCompany">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px" id="pendingDate">—</div>
+      </div>
+      <button class="btn-secondary" onclick="logout()" style="margin-top:18px">Logout</button>
+    </div>
+  </div>
+
+  <!-- Step 3c: Trial Expired / Paywall -->
+  <div id="paywallScreen" class="auth-screen" style="display:none">
+    <div class="auth-card" style="text-align:center">
+      <div style="font-size:64px;margin-bottom:12px">⏰</div>
+      <div class="auth-title">Free Trial Ended</div>
+      <div class="auth-sub">Your 30-day free trial has ended. Upgrade to continue.</div>
+      <button class="btn-primary" onclick="contactAdmin()" style="margin-top:18px">
+        💬 Contact Admin
+      </button>
+      <button class="btn-secondary" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════
+     MAIN APP (after auth + role)
+══════════════════════════════════════════════════ -->
+<div id="appView" style="display:none">
+
+  <header class="hdr">
+    <img src="icon192.png" alt=""
+      style="width:32px;height:32px;border-radius:8px;object-fit:cover;
+             background:var(--card);border:1px solid var(--border2);"
+      onerror="this.style.display='none'">
+    <div class="brand">Shift<span class="dot">IQ</span></div>
+    <div class="hdr-spacer"></div>
+    <div id="trialBadge" style="display:none"></div>
+    <button class="hdr-btn" onclick="openProfile()" id="profileBtn">
+      <span id="profileName">—</span>
+    </button>
+    <button class="hdr-btn" onclick="logout()" title="Logout">⏻</button>
+  </header>
+
+  <main class="main">
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="role-view role-admin" style="display:none">
+      <div class="page-title">Admin Dashboard 👑</div>
+      <div class="page-sub">Manage all registered companies</div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="statTotalCompanies">0</div><div class="stat-lbl">Total Companies</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--amber)" id="statPending">0</div><div class="stat-lbl">Pending Approval</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--green)" id="statActive">0</div><div class="stat-lbl">Active</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--primary)" id="statTrials">0</div><div class="stat-lbl">On Trial</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+        <button class="act-btn amber" onclick="showAdminTab('pending')" id="tabPending">⏳ Pending</button>
+        <button class="act-btn green" onclick="showAdminTab('active')" id="tabActive">✓ Active</button>
+        <button class="act-btn" onclick="showAdminTab('all')" id="tabAll">All Companies</button>
+      </div>
+
+      <div id="adminContent">
+        <div class="empty">
+          <div class="empty-ico">📋</div>
+          <div>Loading companies...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manager Dashboard (placeholder — full features in Phase 2-5) -->
+    <div id="managerDashboard" class="role-view role-manager" style="display:none">
+      <div class="page-title" id="mgrCompanyName">Loading...</div>
+      <div class="page-sub" id="mgrCompanyMeta">—</div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="mgrTotalEmps">0</div><div class="stat-lbl">Total Team</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--green)" id="mgrTodayPresent">—</div><div class="stat-lbl">Today Present</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--amber)" id="mgrTodayLeave">—</div><div class="stat-lbl">On Leave</div></div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(139,92,246,.04));border-color:rgba(59,130,246,.3)">
+        <div style="font-size:14px;font-weight:800;margin-bottom:8px">🚀 Phase 1 — Foundation Ready</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6">
+          Your account is active. Schedule, leave, NCR &amp; report features will be enabled in upcoming updates.
+          <br><br>
+          <b>Coming next:</b> Add team members, set up sections, build first schedule.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-row">
+          <div style="flex:1">
+            <div class="card-name">👥 Add your team</div>
+            <div class="card-sub">Bulk import from Excel or add one-by-one</div>
+          </div>
+          <button class="act-btn" disabled style="opacity:.5">Coming soon</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Member Dashboard (placeholder) -->
+    <div id="memberDashboard" class="role-view role-member" style="display:none">
+      <div class="page-title" id="memberName">—</div>
+      <div class="page-sub" id="memberMeta">—</div>
+
+      <div class="card">
+        <div class="card-name">📅 Today's Shift</div>
+        <div class="card-sub" style="margin-top:8px">Will be visible once your manager sets up the schedule.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Modal -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<!-- reCAPTCHA container (invisible) -->
+<div id="recaptchaContainer"></div>
+
+<!-- ═════════════════════════════════════════════════
+     APP LOGIC
+══════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const APP_VERSION = '0.1.0';
+const SUPER_ADMIN_PHONE = '+918929394920';   // Hardcoded admin number
+const SUPER_ADMIN_WHATSAPP = '8929394920';
+const TRIAL_DAYS = 30;
+
+// Firebase config — Project: shiftiqvks (asia-southeast1)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCjGlT5ea8rp2lERxcuTPWB1e5bZ-wgAjI",
+  authDomain: "shiftiqvks.firebaseapp.com",
+  databaseURL: "https://shiftiqvks-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shiftiqvks",
+  storageBucket: "shiftiqvks.firebasestorage.app",
+  messagingSenderId: "827609972822",
+  appId: "1:827609972822:web:b690c47e56e864ae857bf7"
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FIREBASE INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let _fbApp, _fbAuth, _fbDb;
+let _confirmationResult = null;
+let _recaptchaVerifier = null;
+let _otpResendTimer = null;
+
+try{
+  _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+  _fbAuth = firebase.auth();
+  _fbDb = firebase.database();
+}catch(e){
+  console.error('Firebase init failed:', e);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SESSION STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const SESSION = {
+  phone: null,        // E.164 format e.g. +918929394920
+  uid: null,          // Firebase UID
+  role: null,         // 'admin' | 'manager' | 'member'
+  userData: null,     // From users/{phone}
+  companyId: null,    // For manager/member
+  companyData: null,  // From companies/{companyId}/info
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UI HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function $(id){ return document.getElementById(id); }
+function show(id){ const el=$(id); if(el) el.style.display=''; }
+function hide(id){ const el=$(id); if(el) el.style.display='none'; }
+
+function toast(msg, ms=2800){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(()=> el.classList.remove('show'), ms);
+}
+
+function openModal(html){
+  $('modalBody').innerHTML = html;
+  $('modalOverlay').classList.add('open');
+}
+function closeModal(){
+  $('modalOverlay').classList.remove('open');
+}
+$('modalOverlay').addEventListener('click', e => {
+  if(e.target.id === 'modalOverlay') closeModal();
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SCREEN ROUTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function showScreen(name){
+  ['phoneScreen','otpScreen','registerScreen','pendingScreen','paywallScreen']
+    .forEach(s => hide(s));
+  if(name) show(name);
+}
+
+function showAuth(){
+  hide('loadingScreen');
+  hide('appView');
+  show('authView');
+  showScreen('phoneScreen');
+}
+
+function showApp(){
+  hide('loadingScreen');
+  hide('authView');
+  show('appView');
+
+  // Hide all role views first
+  document.querySelectorAll('.role-view').forEach(el => el.style.display = 'none');
+
+  if(SESSION.role === 'admin'){
+    show('adminDashboard');
+    renderAdminDashboard();
+  } else if(SESSION.role === 'manager'){
+    show('managerDashboard');
+    renderManagerDashboard();
+  } else if(SESSION.role === 'member'){
+    show('memberDashboard');
+    renderMemberDashboard();
+  }
+
+  // Update header
+  $('profileName').textContent = SESSION.userData?.name || 'Profile';
+
+  // Show trial badge if applicable
+  if(SESSION.role === 'manager' && SESSION.userData?.trialEnd){
+    const daysLeft = Math.max(0, Math.ceil((SESSION.userData.trialEnd - Date.now()) / (24*60*60*1000)));
+    if(daysLeft <= 30 && SESSION.userData.plan === 'trial'){
+      const tb = $('trialBadge');
+      tb.style.display = '';
+      tb.innerHTML = `<span class="badge trial">Trial · ${daysLeft}d left</span>`;
+    }
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PHONE AUTH FLOW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function _setupRecaptcha(){
+  if(_recaptchaVerifier) return _recaptchaVerifier;
+  _recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptchaContainer', {
+    size: 'invisible',
+    callback: () => { /* solved */ }
+  });
+  return _recaptchaVerifier;
+}
+
+async function sendOtp(){
+  const phoneRaw = $('phoneInput').value.trim().replace(/\D/g,'');
+  if(phoneRaw.length !== 10){
+    toast('⚠️ Enter valid 10-digit mobile number');
+    return;
+  }
+  const phoneE164 = '+91' + phoneRaw;
+
+  const btn = $('sendOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try{
+    const verifier = _setupRecaptcha();
+    _confirmationResult = await _fbAuth.signInWithPhoneNumber(phoneE164, verifier);
+
+    SESSION.phone = phoneE164;
+    $('otpPhoneLbl').textContent = phoneE164;
+    showScreen('otpScreen');
+    $('otpInput').focus();
+    _startOtpTimer();
+    toast('📩 OTP sent successfully');
+  }catch(e){
+    console.error('sendOtp error:', e);
+    let msg = '❌ Failed to send OTP';
+    if(e.code === 'auth/invalid-phone-number') msg = '❌ Invalid mobile number';
+    else if(e.code === 'auth/too-many-requests') msg = '❌ Too many attempts. Try later.';
+    else if(e.code === 'auth/quota-exceeded') msg = '❌ SMS quota exceeded today';
+    else if(e.message) msg = '❌ ' + e.message.slice(0, 80);
+    toast(msg);
+    // Reset recaptcha on failure
+    try{ _recaptchaVerifier?.clear(); }catch(_){}
+    _recaptchaVerifier = null;
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = 'Send OTP';
+  }
+}
+
+async function verifyOtp(){
+  const code = $('otpInput').value.trim();
+  if(code.length !== 6){
+    toast('⚠️ Enter 6-digit OTP');
+    return;
+  }
+  if(!_confirmationResult){
+    toast('❌ Session expired. Please request OTP again.');
+    backToPhone();
+    return;
+  }
+
+  const btn = $('verifyOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try{
+    const result = await _confirmationResult.confirm(code);
+    SESSION.uid = result.user.uid;
+    SESSION.phone = result.user.phoneNumber;
+    await routeAuthenticatedUser();
+  }catch(e){
+    console.error('verifyOtp error:', e);
+    toast(e.code === 'auth/invalid-verification-code' ? '❌ Wrong OTP' : '❌ Verification failed');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = 'Verify & Continue';
+  }
+}
+
+function backToPhone(){
+  $('otpInput').value = '';
+  _confirmationResult = null;
+  if(_otpResendTimer){ clearInterval(_otpResendTimer); _otpResendTimer = null; }
+  showScreen('phoneScreen');
+}
+
+function _startOtpTimer(){
+  let secs = 30;
+  const lbl = $('otpTimer');
+  if(_otpResendTimer) clearInterval(_otpResendTimer);
+  const tick = () => {
+    if(secs <= 0){ lbl.textContent = ''; clearInterval(_otpResendTimer); return; }
+    lbl.textContent = `Resend in ${secs}s`;
+    secs--;
+  };
+  tick();
+  _otpResendTimer = setInterval(tick, 1000);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST-AUTH ROUTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function routeAuthenticatedUser(){
+  // SUPER ADMIN check (hardcoded number)
+  if(SESSION.phone === SUPER_ADMIN_PHONE){
+    SESSION.role = 'admin';
+    SESSION.userData = { name: 'Super Admin', phone: SESSION.phone };
+    showApp();
+    return;
+  }
+
+  // Look up users/{phone} (replace + and dots in path)
+  const phoneKey = _phoneKey(SESSION.phone);
+  const userSnap = await _fbDb.ref('users/' + phoneKey).get();
+
+  if(userSnap.exists()){
+    const u = userSnap.val();
+    SESSION.userData = u;
+    SESSION.role = u.role;
+    SESSION.companyId = u.companyId;
+
+    if(u.status === 'pending'){
+      // Admin hasn't approved yet
+      $('pendingName').textContent = u.name || '—';
+      $('pendingCompany').textContent = u.companyName || '—';
+      $('pendingDate').textContent = u.requestedAt
+        ? 'Requested: ' + new Date(u.requestedAt).toLocaleDateString()
+        : '';
+      hide('appView');
+      show('authView');
+      hide('loadingScreen');
+      showScreen('pendingScreen');
+      return;
+    }
+
+    if(u.status === 'suspended' || u.status === 'expired'){
+      hide('appView');
+      show('authView');
+      hide('loadingScreen');
+      showScreen('paywallScreen');
+      return;
+    }
+
+    // Check trial expiry
+    if(u.role === 'manager' && u.plan === 'trial' && u.trialEnd && Date.now() > u.trialEnd){
+      // Auto-mark expired
+      await _fbDb.ref('users/' + phoneKey + '/status').set('expired');
+      hide('appView');
+      show('authView');
+      hide('loadingScreen');
+      showScreen('paywallScreen');
+      return;
+    }
+
+    // Load company data
+    if(u.companyId){
+      const cSnap = await _fbDb.ref('companies/' + u.companyId + '/info').get();
+      SESSION.companyData = cSnap.val();
+    }
+
+    showApp();
+  } else {
+    // First-time user — show registration
+    show('authView');
+    hide('appView');
+    hide('loadingScreen');
+    showScreen('registerScreen');
+  }
+}
+
+function _phoneKey(phone){
+  // Convert +918929394920 → 918929394920 (Firebase keys can't contain '+', '.', etc.)
+  return phone.replace(/[^\d]/g, '');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MANAGER REGISTRATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function submitRegistration(){
+  const name = $('regName').value.trim();
+  const companyName = $('regCompanyName').value.trim();
+  const companyType = $('regCompanyType').value;
+  const empCode = $('regEmpCode').value.trim();
+  const designation = $('regDesignation').value.trim();
+
+  if(!name){ toast('⚠️ Enter your full name'); return; }
+  if(!companyName){ toast('⚠️ Enter company name'); return; }
+  if(!companyType){ toast('⚠️ Select company type'); return; }
+  if(!empCode){ toast('⚠️ Enter employee code'); return; }
+  if(!designation){ toast('⚠️ Enter designation'); return; }
+
+  // Generate companyId from companyName (lowercase, alphanumeric)
+  const companyId = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30)
+    + '_' + Date.now().toString(36).slice(-6);
+
+  const phoneKey = _phoneKey(SESSION.phone);
+  const now = Date.now();
+  const trialEnd = now + (TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+  const userRecord = {
+    name, phone: SESSION.phone, role: 'manager',
+    companyId, companyName, companyType, empCode, designation,
+    status: 'pending',  // Admin will approve
+    plan: 'trial',
+    trialStart: now,
+    trialEnd,
+    requestedAt: now
+  };
+
+  const companyRecord = {
+    name: companyName,
+    type: companyType,
+    ownerPhone: SESSION.phone,
+    ownerName: name,
+    createdAt: now,
+    plan: 'trial',
+    trialEnd,
+    status: 'pending'
+  };
+
+  try{
+    // Atomic write to both nodes
+    const updates = {};
+    updates['users/' + phoneKey] = userRecord;
+    updates['companies/' + companyId + '/info'] = companyRecord;
+    await _fbDb.ref().update(updates);
+
+    SESSION.userData = userRecord;
+    SESSION.companyId = companyId;
+
+    // Notify admin via WhatsApp link (open in new tab)
+    const adminMsg = `📥 *New ShiftIQ Registration*\n\n` +
+      `Name: ${name}\n` +
+      `Company: ${companyName}\n` +
+      `Type: ${companyType}\n` +
+      `Phone: ${SESSION.phone}\n` +
+      `Designation: ${designation}\n\n` +
+      `Please review and approve.`;
+    const waUrl = `https://wa.me/91${SUPER_ADMIN_WHATSAPP}?text=${encodeURIComponent(adminMsg)}`;
+    // Don't auto-open — just store, admin sees via push later
+    console.log('Admin notification:', waUrl);
+
+    $('pendingName').textContent = name;
+    $('pendingCompany').textContent = companyName;
+    $('pendingDate').textContent = 'Requested: ' + new Date(now).toLocaleDateString();
+    showScreen('pendingScreen');
+    toast('✅ Registration submitted!');
+  }catch(e){
+    console.error('Registration error:', e);
+    toast('❌ Failed: ' + (e.message || 'Try again'));
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LOGOUT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function logout(){
+  try{ await _fbAuth.signOut(); }catch(_){}
+  Object.keys(SESSION).forEach(k => SESSION[k] = null);
+  if(_recaptchaVerifier){ try{ _recaptchaVerifier.clear(); }catch(_){}; _recaptchaVerifier = null; }
+  if(_otpResendTimer){ clearInterval(_otpResendTimer); _otpResendTimer = null; }
+  _confirmationResult = null;
+  $('phoneInput').value = '';
+  $('otpInput').value = '';
+  showAuth();
+}
+
+function contactAdmin(){
+  const msg = `Hi, my ShiftIQ trial has ended. I'd like to upgrade.\n\nPhone: ${SESSION.phone}\nCompany: ${SESSION.userData?.companyName || ''}`;
+  window.open(`https://wa.me/91${SUPER_ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ADMIN DASHBOARD
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let _adminTab = 'pending';
+
+async function renderAdminDashboard(){
+  // Set up live listener on users
+  _fbDb.ref('users').on('value', snap => {
+    const users = snap.val() || {};
+    _adminUsers = users;
+    _renderAdminContent();
+  });
+}
+
+let _adminUsers = {};
+
+function _renderAdminContent(){
+  const all = Object.entries(_adminUsers).map(([k,v]) => ({phoneKey:k, ...v}))
+    .filter(u => u.role === 'manager');
+
+  const pending = all.filter(u => u.status === 'pending');
+  const active  = all.filter(u => u.status === 'active');
+  const trials  = active.filter(u => u.plan === 'trial' && u.trialEnd > Date.now());
+
+  $('statTotalCompanies').textContent = all.length;
+  $('statPending').textContent = pending.length;
+  $('statActive').textContent = active.length;
+  $('statTrials').textContent = trials.length;
+
+  let visible;
+  if(_adminTab === 'pending') visible = pending;
+  else if(_adminTab === 'active') visible = active;
+  else visible = all;
+
+  // Highlight active tab
+  ['Pending','Active','All'].forEach(name => {
+    const btn = $('tab' + name);
+    if(btn) btn.style.opacity = (_adminTab === name.toLowerCase() ? '1' : '.55');
+  });
+
+  const cont = $('adminContent');
+  if(!visible.length){
+    cont.innerHTML = `<div class="empty">
+      <div class="empty-ico">📭</div>
+      <div>No companies in this category</div>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML = visible.map(u => {
+    const trialDays = u.trialEnd ? Math.max(0, Math.ceil((u.trialEnd - Date.now()) / 86400000)) : 0;
+    const requestedDate = u.requestedAt ? new Date(u.requestedAt).toLocaleDateString() : '—';
+    const statusBadge = `<span class="badge ${u.status}">${u.status}</span>`;
+    const planBadge = u.plan === 'trial'
+      ? `<span class="badge trial" style="margin-left:6px">Trial · ${trialDays}d</span>`
+      : '';
+
+    return `<div class="card">
+      <div class="card-row">
+        <div style="flex:1;min-width:0">
+          <div class="card-name">${_esc(u.name || '—')}</div>
+          <div class="card-sub">${_esc(u.companyName || '—')} · ${_esc(u.companyType || '')}</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:4px">
+            📱 ${_esc(u.phone)} · ${_esc(u.designation || '')} · Code: ${_esc(u.empCode || '')}
+          </div>
+          <div style="margin-top:8px">${statusBadge}${planBadge}</div>
+        </div>
+      </div>
+      <div class="act-row">
+        ${u.status === 'pending' ? `
+          <button class="act-btn green" onclick="approveManager('${u.phoneKey}')">✅ Approve</button>
+          <button class="act-btn red" onclick="rejectManager('${u.phoneKey}')">❌ Reject</button>
+        ` : ''}
+        ${u.status === 'active' ? `
+          <button class="act-btn" onclick="extendTrial('${u.phoneKey}')">⏳ Extend</button>
+          <button class="act-btn red" onclick="suspendManager('${u.phoneKey}')">⏸ Suspend</button>
+        ` : ''}
+        ${u.status === 'suspended' ? `
+          <button class="act-btn green" onclick="reactivateManager('${u.phoneKey}')">▶ Reactivate</button>
+        ` : ''}
+        <button class="act-btn" onclick="viewCompanyDetails('${u.phoneKey}')">👁 Details</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:8px">Requested: ${requestedDate}</div>
+    </div>`;
+  }).join('');
+}
+
+function showAdminTab(tab){
+  _adminTab = tab;
+  _renderAdminContent();
+}
+
+async function approveManager(phoneKey){
+  try{
+    const u = _adminUsers[phoneKey];
+    if(!u) return;
+    const updates = {};
+    updates['users/' + phoneKey + '/status'] = 'active';
+    if(u.companyId) updates['companies/' + u.companyId + '/info/status'] = 'active';
+    await _fbDb.ref().update(updates);
+    toast('✅ ' + u.name + ' approved');
+  }catch(e){ toast('❌ Failed: ' + e.message); }
+}
+
+async function rejectManager(phoneKey){
+  if(!confirm('Reject this registration? This will delete the user record.')) return;
+  try{
+    const u = _adminUsers[phoneKey];
+    const updates = {};
+    updates['users/' + phoneKey] = null;
+    if(u?.companyId) updates['companies/' + u.companyId] = null;
+    await _fbDb.ref().update(updates);
+    toast('❌ Registration rejected');
+  }catch(e){ toast('❌ Failed: ' + e.message); }
+}
+
+async function extendTrial(phoneKey){
+  const days = prompt('Extend trial by how many days?', '30');
+  if(!days || isNaN(days)) return;
+  try{
+    const u = _adminUsers[phoneKey];
+    const newEnd = (u.trialEnd > Date.now() ? u.trialEnd : Date.now()) + (parseInt(days) * 86400000);
+    const updates = {};
+    updates['users/' + phoneKey + '/trialEnd'] = newEnd;
+    if(u.companyId) updates['companies/' + u.companyId + '/info/trialEnd'] = newEnd;
+    await _fbDb.ref().update(updates);
+    toast('⏳ Trial extended by ' + days + ' days');
+  }catch(e){ toast('❌ Failed: ' + e.message); }
+}
+
+async function suspendManager(phoneKey){
+  if(!confirm('Suspend this manager?')) return;
+  try{
+    await _fbDb.ref('users/' + phoneKey + '/status').set('suspended');
+    toast('⏸ Suspended');
+  }catch(e){ toast('❌ ' + e.message); }
+}
+
+async function reactivateManager(phoneKey){
+  try{
+    await _fbDb.ref('users/' + phoneKey + '/status').set('active');
+    toast('▶ Reactivated');
+  }catch(e){ toast('❌ ' + e.message); }
+}
+
+function viewCompanyDetails(phoneKey){
+  const u = _adminUsers[phoneKey];
+  if(!u) return;
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title">${_esc(u.companyName)}</div>
+    <div class="modal-sub">${_esc(u.companyType)} · ${_esc(u.companyId || '')}</div>
+
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Owner</div>
+      <div style="font-weight:700">${_esc(u.name)}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px">${_esc(u.designation || '')}</div>
+      <div style="font-size:13px;color:var(--muted)">📱 ${_esc(u.phone)}</div>
+    </div>
+
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Plan</div>
+      <div style="font-weight:700">${u.plan || 'trial'}</div>
+      ${u.trialEnd ? `<div style="font-size:13px;color:var(--muted);margin-top:2px">
+        Trial ends: ${new Date(u.trialEnd).toLocaleDateString()}
+      </div>` : ''}
+    </div>
+
+    <button class="btn-secondary" onclick="closeModal()">Close</button>
+  `);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MANAGER DASHBOARD (placeholder — Phase 2)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderManagerDashboard(){
+  $('mgrCompanyName').textContent = SESSION.companyData?.name || SESSION.userData.companyName || '—';
+  $('mgrCompanyMeta').textContent = (SESSION.companyData?.type || '') + ' · ' + SESSION.userData.designation;
+
+  // TODO Phase 2: render team count, today's roster, etc.
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MEMBER DASHBOARD (placeholder — Phase 2)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderMemberDashboard(){
+  $('memberName').textContent = SESSION.userData.name || '—';
+  $('memberMeta').textContent = SESSION.companyData?.name || '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PROFILE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function openProfile(){
+  const u = SESSION.userData || {};
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title">Profile</div>
+
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Name</div>
+      <div style="font-weight:700">${_esc(u.name || '—')}</div>
+    </div>
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Phone</div>
+      <div style="font-weight:700">${_esc(u.phone || SESSION.phone || '—')}</div>
+    </div>
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Role</div>
+      <div style="font-weight:700">${_esc(SESSION.role || '—').toUpperCase()}</div>
+    </div>
+    ${u.companyName ? `
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted)">Company</div>
+      <div style="font-weight:700">${_esc(u.companyName)}</div>
+      <div style="font-size:13px;color:var(--muted)">${_esc(u.companyType || '')}</div>
+    </div>
+    ` : ''}
+
+    <button class="btn-secondary" onclick="closeModal()">Close</button>
+    <div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:14px">
+      ShiftIQ v${APP_VERSION}
+    </div>
+  `);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UTILS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function _esc(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTH STATE LISTENER (auto-login if session active)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_fbAuth?.onAuthStateChanged(async user => {
+  if(user && user.phoneNumber){
+    SESSION.uid = user.uid;
+    SESSION.phone = user.phoneNumber;
+    try{
+      await routeAuthenticatedUser();
+    }catch(e){
+      console.error('Auto-route failed:', e);
+      showAuth();
+    }
+  } else {
+    showAuth();
+  }
+});
+
+// Fallback if Firebase fails to init
+setTimeout(()=>{
+  if($('loadingScreen').style.display !== 'none' && !SESSION.uid){
+    showAuth();
+  }
+}, 4000);
+
+// Enter key handlers
+$('phoneInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); sendOtp(); }
+});
+$('otpInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); verifyOtp(); }
+});
+$('otpInput').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+});
+$('phoneInput').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+});
+
+console.log('%c ShiftIQ ', 'background:#3b82f6;color:#fff;font-weight:bold;padding:4px 10px;border-radius:4px',
+  ' v' + APP_VERSION + ' loaded');
+</script>
+</body>
+</html>
