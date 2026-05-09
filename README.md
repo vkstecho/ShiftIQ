@@ -179,3 +179,59 @@ Once Phase 1 is deployed and verified:
 1. Tell me — and I'll deliver Phase 2 (Manager dashboard + Team management)
 2. Plan to **dogfood** with your own GLS data first as a "company" inside ShiftIQ
 3. After Phase 3 (schedules), recruit 1-2 beta customers to test
+
+---
+
+## Publishing to Google Play Store (TWA)
+
+ShiftIQ can be published to Play Store as a Trusted Web Activity (TWA) — a real Android app powered by your PWA.
+
+### Required Files (✅ already provided)
+
+- `index.html` — main app
+- `manifest.json` — PWA manifest with icons
+- `sw.js` — service worker (offline + installability)
+- `icon192.png`, `icon512.png` — you upload via Gemini
+- `privacy.html` — Privacy Policy (required by Play Store)
+- `terms.html` — Terms of Service
+- `delete-account.html` — Account deletion (required by Play Store)
+
+### Public URLs needed for Play Store Console
+
+When submitting:
+- **Privacy Policy URL:** `https://yourdomain.com/privacy.html`
+- **Account Deletion URL:** `https://yourdomain.com/delete-account.html`
+- **Website URL:** `https://yourdomain.com`
+
+### Build TWA APK
+
+Use **Bubblewrap** by Google:
+```bash
+npm i -g @bubblewrap/cli
+bubblewrap init --manifest=https://yourdomain.com/manifest.json
+bubblewrap build
+```
+
+This generates an `app-release-bundle.aab` you upload to Play Console.
+
+### Play Console Required Screenshots
+- 2–8 phone screenshots (1080×1920 or similar)
+- 1 feature graphic (1024×500)
+- App icon (512×512 — same as `icon512.png`)
+- Short description (max 80 chars)
+- Full description (max 4000 chars)
+
+### Data Safety Form Answers (Play Console)
+
+| Data Type | Collected? | Shared? | Purpose |
+|---|---|---|---|
+| Phone number | ✅ Yes | ❌ No | Account login (OTP) |
+| Name | ✅ Yes | Within company only | App functionality |
+| Employee data | ✅ Yes | Within company only | Core feature |
+| Location | ❌ No | — | — |
+| Photos/videos | ❌ No | — | — |
+| Contacts | ❌ No | — | — |
+| Financial info | ❌ No | — | — |
+
+- Data is encrypted in transit (HTTPS)
+- Users can request deletion (in-app + email + WhatsApp)

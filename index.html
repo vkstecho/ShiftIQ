@@ -1053,11 +1053,96 @@ function openProfile(){
     </div>
     ` : ''}
 
+    <div class="card" style="background:var(--card)">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Legal</div>
+      <a href="privacy.html" target="_blank" style="display:block;padding:6px 0;font-size:13px;color:var(--primary);text-decoration:none">📄 Privacy Policy</a>
+      <a href="terms.html" target="_blank" style="display:block;padding:6px 0;font-size:13px;color:var(--primary);text-decoration:none">📜 Terms of Service</a>
+      <a href="delete-account.html" target="_blank" style="display:block;padding:6px 0;font-size:13px;color:var(--primary);text-decoration:none">🗑️ Account Deletion Info</a>
+    </div>
+
     <button class="btn-secondary" onclick="closeModal()">Close</button>
+    <button onclick="initDeleteAccount()" style="width:100%;padding:13px;border-radius:12px;
+      border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08);
+      color:var(--red);font-size:13px;font-weight:700;
+      font-family:inherit;cursor:pointer;margin-top:10px">
+      🗑️ Delete My Account
+    </button>
     <div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:14px">
       ShiftIQ v${APP_VERSION}
     </div>
   `);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DELETE ACCOUNT (Play Store requirement)
+// User can delete their account from within the app.
+// Removes: users/{phoneKey} record + (if manager) all company data.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function initDeleteAccount(){
+  closeModal();
+
+  const isMgr = SESSION.role === 'manager';
+  const warning = isMgr
+    ? `⚠️ <b>Warning</b>: Deleting your account will <b>permanently delete all company data</b>:
+        <br>• All employees, schedules, leaves, reports
+        <br>• Your access to ShiftIQ
+        <br>• Team members lose access immediately
+        <br><br>This action <b>cannot be undone</b>.`
+    : `⚠️ Deleting your account will remove your access to ShiftIQ. This cannot be undone.`;
+
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="color:var(--red)">🗑️ Delete Account</div>
+    <div class="card" style="background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.3)">
+      <div style="font-size:13px;line-height:1.6">${warning}</div>
+    </div>
+
+    <div class="field">
+      <label>To confirm, type <b style="color:var(--red)">DELETE</b> below</label>
+      <input type="text" id="delConfirmInput" placeholder="Type DELETE to confirm" autocomplete="off">
+    </div>
+
+    <button onclick="confirmDeleteAccount()" style="width:100%;padding:14px;border-radius:12px;
+      border:none;background:var(--red);color:#fff;font-size:15px;font-weight:800;
+      font-family:inherit;cursor:pointer">
+      Delete My Account Permanently
+    </button>
+    <button class="btn-secondary" onclick="closeModal()" style="margin-top:10px">
+      Cancel — Keep My Account
+    </button>
+  `);
+}
+
+async function confirmDeleteAccount(){
+  const input = $('delConfirmInput').value.trim().toUpperCase();
+  if(input !== 'DELETE'){
+    toast('⚠️ Please type DELETE in capitals to confirm');
+    return;
+  }
+
+  try{
+    const phoneKey = _phoneKey(SESSION.phone);
+    const updates = {};
+    updates['users/' + phoneKey] = null;
+
+    // If manager, also delete company data
+    if(SESSION.role === 'manager' && SESSION.companyId){
+      updates['companies/' + SESSION.companyId] = null;
+    }
+    // If member, only remove user record (company stays for manager)
+
+    await _fbDb.ref().update(updates);
+
+    // Delete Firebase Auth account too
+    try{ await _fbAuth.currentUser?.delete(); }catch(_){}
+
+    toast('🗑️ Account deleted successfully');
+    closeModal();
+    setTimeout(() => logout(), 1500);
+  }catch(e){
+    console.error('Delete account error:', e);
+    toast('❌ Failed to delete: ' + (e.message || 'try again'));
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1109,6 +1194,49 @@ $('phoneInput').addEventListener('input', e => {
 
 console.log('%c ShiftIQ ', 'background:#3b82f6;color:#fff;font-weight:bold;padding:4px 10px;border-radius:4px',
   ' v' + APP_VERSION + ' loaded');
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SERVICE WORKER REGISTRATION (PWA)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[SW] Registered, scope:', reg.scope);
+        // Listen for new SW available
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if(newWorker){
+            newWorker.addEventListener('statechange', () => {
+              if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+                // New version ready — silently update on next reload
+                console.log('[SW] New version available');
+              }
+            });
+          }
+        });
+      })
+      .catch(err => console.warn('[SW] Registration failed:', err));
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INSTALL PROMPT (Add to Home Screen)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+});
+window.installApp = async function(){
+  if(!_deferredPrompt){ toast('App install option not available right now'); return; }
+  _deferredPrompt.prompt();
+  const choice = await _deferredPrompt.userChoice;
+  if(choice.outcome === 'accepted'){
+    toast('🎉 App installed! Check your home screen');
+  }
+  _deferredPrompt = null;
+};
 </script>
 </body>
 </html>
