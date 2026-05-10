@@ -10,10 +10,14 @@
 <meta name="robots" content="noindex">
 <title>ShiftIQ — Smart Shift Management</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="512x512" href="icon512.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon192.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icon192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon512.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icon-96.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-72.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icon-128.png">
 
 <!-- Firebase SDK (modular v9 via compat for simplicity) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -168,7 +172,7 @@ body{padding-bottom:env(safe-area-inset-bottom);}
 
 <!-- Loading Screen -->
 <div id="loadingScreen">
-  <img src="icon512.png" alt="ShiftIQ"
+  <img src="icon-512.png" alt="ShiftIQ"
     style="width:96px;height:96px;border-radius:22px;object-fit:cover;
            background:var(--card);border:1px solid var(--border2);"
     onerror="this.style.display='none';document.getElementById('loadingTextFallback').style.display='block';">
@@ -187,7 +191,7 @@ body{padding-bottom:env(safe-area-inset-bottom);}
   <div id="phoneScreen" class="auth-screen">
     <div class="auth-card">
       <div style="display:flex;justify-content:center;margin-bottom:16px">
-        <img src="icon512.png" alt="ShiftIQ"
+        <img src="icon-512.png" alt="ShiftIQ"
           style="width:80px;height:80px;border-radius:20px;object-fit:cover;
                  background:var(--card);border:1px solid var(--border2);
                  box-shadow:0 8px 24px rgba(59,130,246,.25);"
@@ -337,7 +341,7 @@ body{padding-bottom:env(safe-area-inset-bottom);}
 <div id="appView" style="display:none">
 
   <header class="hdr">
-    <img src="icon192.png" alt=""
+    <img src="icon-192.png" alt=""
       style="width:32px;height:32px;border-radius:8px;object-fit:cover;
              background:var(--card);border:1px solid var(--border2);"
       onerror="this.style.display='none'">
