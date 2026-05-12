@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.vkstech.shiftiq",
+        "sha256_cert_fingerprints": ["DE:B1:1D:00:3C:08:24:F2:80:7A:BE:A8:2C:EF:1E:A3:87:27:30:AF:90:4B:4B:53:19:55:6D:44:34:C8:B3:FB"]
+      }
+    }]
